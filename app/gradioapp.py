@@ -71,7 +71,7 @@ def create_video_with_audio_length(original_video_path, audio_path, output_video
     final_video_clip = final_video_clip.set_audio(audio_clip)
 
     #final_video_clip.write_videofile(output_video_path, codec='libvpx', audio_codec='aac', remove_temp=True)
-    final_video_clip.write_videofile(output_video_path, codec='libx264', audio_codec='aac', temp_audiofile=f"{temp_path}/AnswerVideoTEMP_MPY_wvf_snd.mp4", remove_temp=True)
+    final_video_clip.write_videofile(output_video_path, codec='libx264', audio_codec='aac', temp_audiofile=temp_path, remove_temp=True)
 
 def get_audio_duration(audio_path):
     audio = AudioSegment.from_mp3(audio_path)
@@ -89,7 +89,7 @@ async def handle_response(question, selected_language_code, prompt):
     response_text = response.text
     global geminiAnswerText
     geminiAnswerText = response_text
-    temp_path = f"{CONTENT_PATH}/{uuid.uuid4()}"
+    temp_path = f"{CONTENT_PATH}/{uuid.uuid4()}/AnswerVideoTEMP_MPY_wvf_snd.mp4"
     try:
         os.makedirs(os.path.dirname(AUDIO_OUTPUT_FILE), exist_ok=True)
         os.makedirs(os.path.dirname(temp_path), exist_ok=True)
