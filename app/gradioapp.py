@@ -109,11 +109,10 @@ async def handle_response(question, selected_language_code, prompt):
         print(f"Generating audio for response: {response_text}")
         await generate_audio(response_text, full_voice_name, audio_path)
         print(f"Creating video with audio for response: {response_text}")
-        create_video_with_audio_length(VIDEO_ORIGIN_FILE, AUDIO_OUTPUT_FILE, VIDEO_OUTPUT_FILE, temp_path)
-
+        create_video_with_audio_length(VIDEO_ORIGIN_FILE, audio_path, video_path, temp_path)
         print
         video_ready = True
-        return VIDEO_OUTPUT_FILE
+        return video_path
     except Exception as e:
         print(f"Error creating video: {e}")
         return None
