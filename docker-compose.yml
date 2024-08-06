@@ -1,0 +1,12 @@
+
+services:
+  app:
+    container_name: goolgeai_app
+    restart: always
+    build: 
+      context: ./
+      dockerfile: Dockerfile
+    entrypoint: ["python"]
+    command: ["main.py"]
+    ports:
+      - "8080:8080"

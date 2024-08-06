@@ -1,0 +1,47 @@
+service: googleai-competition
+
+package:
+  exclude:
+    - ./**
+  include:
+    - Dockerfile
+
+plugins:
+  - serverless-offline
+
+
+provider:
+  name: aws
+  architecture: arm64
+  apiName: googleai-competition-service-${opt:stage,'dev'}
+  runtime: python3.10
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-west-2'}
+  memorySize: 10240
+  timeout: 900
+  logRetentionInDays: 1
+  versionFunctions: true
+
+  environment:
+    AWS_LAMBDA: true
+    ENV: ${self:provider.stage}
+    CONTENT_PATH: /tmp/content
+    XDG_CACHE_HOME: /tmp/.cache
+
+  ecr:
+    images:
+      appimage:
+        path: ./
+
+functions:
+  app:
+    timeout: 900
+    maximumEventAge: 60
+    maximumRetryAttempts: 0
+    image:
+      name: appimage
+    events:
+      - http:
+          public: true
+          path: /{proxy+}
+          method: ANY

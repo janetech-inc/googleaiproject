@@ -1,0 +1,16 @@
+fastapi
+mangum
+pytest
+uvicorn
+requests
+
+google-generativeai
+gTTS
+gradio
+speechrecognition 
+sounddevice 
+soundfile
+moviepy
+faster-whisper
+nest_asyncio
+edge_tts

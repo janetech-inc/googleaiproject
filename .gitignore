@@ -1,0 +1,12 @@
+#  Local .terraform directories
+.terraform
+
+.serverless/**
+
+# env
+.env
+node_modules
+package-lock.json
+
+__pycache__
+static
