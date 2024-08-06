@@ -75,7 +75,16 @@ def create_video_with_audio_length(original_video_path, audio_path, output_video
         final_video_clip = final_video_clip.subclip(0, audio_duration)
     audio_clip = AudioFileClip(audio_path)
     final_video_clip = final_video_clip.set_audio(audio_clip)
-    final_video_clip.write_videofile(output_video_path, codec='libx264', audio_codec='aac', temp_audiofile=temp_path)
+
+    final_video_clip.write_videofile(output_video_path, 
+                                     codec='libx264', 
+                                     audio_codec='aac', 
+                                     temp_audiofile=temp_path, 
+                                     threads=20, 
+                                     remove_temp=True,
+                                     verbose=False, 
+                                     preset='ultrafast', 
+                                     )
 
 def get_audio_duration(audio_path):
     audio = AudioSegment.from_mp3(audio_path)
