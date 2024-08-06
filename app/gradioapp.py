@@ -12,6 +12,8 @@ from moviepy.editor import VideoFileClip, concatenate_videoclips, AudioFileClip
 from pydub import AudioSegment
 import gradio as gr
 import uuid
+import json
+import re
 
 nest_asyncio.apply()
 
@@ -21,6 +23,10 @@ CONTENT_PATH = os.environ.get("CONTENT_PATH", "./tmp/output")
 AUDIO_OUTPUT_FILE = "AnswerAudioTest.mp3"
 VIDEO_OUTPUT_FILE = "AnswerVideo.mp4"
 VIDEO_ORIGIN_FILE = "app/assets/Shelly.mp4"
+
+video_ready = False
+language_codeG = "en"
+questionG = ""
 
 async def initialize_voices():
     global VOICE_OPTIONS
@@ -77,16 +83,22 @@ def get_audio_duration(audio_path):
 
 async def handle_response(question, selected_language_code, prompt):
     print(f"Selected language code: {selected_language_code}")
+    global video_ready
+    global language_codeG
+    global geminiAnswerText
+    global questionG
 
     genai.configure(api_key="AIzaSyB9In1M-PS_TxrWBtHoivcGBTVqgPWCcIg")
     
     full_voice_name = VOICE_OPTIONS.get(selected_language_code, 'en-US')  # Default to 'en-US' if not found
     locale_part = full_voice_name.split('(')[1].split(',')[0].strip()  # "en-US"
     language_code = locale_part.split('-')[0]  # "en"
+    language_codeG = language_code
+    questionG = question
     response = genai.GenerativeModel('gemini-pro').generate_content(prompt + language_code +"\n and this is the user question \n" + question)
     response_text = response.text
-    global geminiAnswerText
     geminiAnswerText = response_text
+    
     temp_path = f"{CONTENT_PATH}/{uuid.uuid4()}/AnswerVideoTEMP_MPY_wvf_snd.mp4"
     audio_path = f"{CONTENT_PATH}/{uuid.uuid4()}/{AUDIO_OUTPUT_FILE}"
     video_path = f"{CONTENT_PATH}/{uuid.uuid4()}/{VIDEO_OUTPUT_FILE}"
@@ -97,8 +109,11 @@ async def handle_response(question, selected_language_code, prompt):
         print(f"Generating audio for response: {response_text}")
         await generate_audio(response_text, full_voice_name, audio_path)
         print(f"Creating video with audio for response: {response_text}")
-        create_video_with_audio_length(VIDEO_ORIGIN_FILE, audio_path, video_path, temp_path)
-        return video_path
+        create_video_with_audio_length(VIDEO_ORIGIN_FILE, AUDIO_OUTPUT_FILE, VIDEO_OUTPUT_FILE, temp_path)
+
+        print
+        video_ready = True
+        return VIDEO_OUTPUT_FILE
     except Exception as e:
         print(f"Error creating video: {e}")
         return None
@@ -106,13 +121,53 @@ async def handle_response(question, selected_language_code, prompt):
 def reset_ui():
     return None, "en"
 
-def gradio_interface(prompt, app):
-    with gr.Blocks(analytics_enabled=False,) as demo:
-        gr.Markdown("# Ask Shelly")
+def handle_suggestions(suggestionsPrompt):
+    if not video_ready:
+        return "You can get suggestions when the video becomes ready."
+    else:
+        response_suggestions = genai.GenerativeModel('gemini-pro').generate_content(suggestionsPrompt + language_codeG +"\n and this is the user question \n" + questionG)
+        print(response_suggestions.text)
+        suggestions = extract_suggestions(response_suggestions.text)
+        return format_suggestions_as_html(suggestions)
 
+
+def extract_suggestions(text):
+    pattern = re.compile(r'([^\[]+?)(?:\[(?:[^\]]+?)\])?\((https?://[^\)]+)\)')
+    matches = pattern.findall(text)
+    suggestions = [{"text": match[0].strip(), "url": match[1]} for match in matches]
+    return suggestions
+
+def format_suggestions_as_html(suggestions):
+    html_content = ""
+    for suggestion in suggestions:
+        html_content += f'<a href="{suggestion["url"]}" target="_blank">{suggestion["text"]}</a><br>'
+    return html_content
+
+
+theme = gr.themes.Default(primary_hue="green").set(
+    button_primary_background_fill="#388e3c",
+    button_primary_background_fill_hover="#66bb6a",
+)
+def read_css_file(filename):
+    with open(filename, 'r') as file:
+        return file.read()
+
+
+def gradio_interface(prompt,suggestionsPrompt,app):
+    css = read_css_file('app/assets/styles.css')
+    with gr.Blocks(analytics_enabled=False,css=css,theme=theme , title="Shelly Bot") as demo:
+        gr.HTML("""
+            <div class="header">
+                <div class="title">
+                    <h1><i class='fas fa-question-circle'></i> ASK Shelly!! </h1>
+                </div>
+                <span class="turtle">🐢</span> <!-- Turtle emoji element -->
+            </div>
+        """)
         with gr.Row():
-            with gr.Column(scale=1, min_width=200):
-                text_input = gr.Textbox(label="Your question here", lines=3, max_lines=3, scale=0.7)
+            with gr.Column(scale=2, min_width=200):
+                video_output = gr.Video(label="Your Answer Video", scale=0.8)
+                qusetion_input = gr.Textbox(label="Question", placeholder="Write Your question here, or Record it", lines=1, max_lines=3, scale=0.5)
                 language_codes = asyncio.run(list_language_codes())  # Fetch language codes asynchronously
                 language_selector = gr.Dropdown(
                     label="Select Voice Locale",
@@ -120,18 +175,18 @@ def gradio_interface(prompt, app):
                     value="en",  # Default choice
                     scale=0.7
                 )
+                suggestions_output = gr.HTML(label="Shelly Suggestions")  # Changed to gr.HTML
 
                 with gr.Row():
-                    send_button = gr.Button("Send", scale=0.7)
-                    new_question_button = gr.Button("New Question", scale=0.7)
-
-                video_output = gr.Video(label="Generated Answer Video", scale=0.7)
+                    send_button = gr.Button("Send", scale=0.7, elem_classes="gradio-button")
+                    suggestions_button = gr.Button("Shelly Suggestions", scale=0.7, elem_classes="gradio-button")  
+                    new_question_button = gr.Button("New Question", scale=0.7, elem_classes="gradio-button")
 
             with gr.Column(scale=1, min_width=200):
                 audio_input = gr.Audio(type="filepath", label="Record your question", scale=0.7)
                 transcribe_button = gr.Button("Audio to Text", scale=0.7)
 
-        transcribe_button.click(handle_audio_upload, inputs=audio_input, outputs=text_input)
+        transcribe_button.click(handle_audio_upload, inputs=audio_input, outputs=qusetion_input)
 
         # Asynchronous function wrapper for Gradio
         async def async_handle_send(question, language_code):
@@ -141,12 +196,22 @@ def gradio_interface(prompt, app):
             asyncio.run(initialize_voices())    
             return asyncio.run(async_handle_send(question, language_code))
 
+        def handle_suggestions_click():
+            return handle_suggestions(suggestionsPrompt)
+
         send_button.click(
             handle_send,
-            inputs=[text_input, language_selector],
+            inputs=[qusetion_input, language_selector],
             outputs=video_output
         )
-        new_question_button.click(reset_ui, outputs=[audio_input, text_input, video_output, language_selector])
+        new_question_button.click(
+            reset_ui, 
+            outputs=[audio_input, qusetion_input, video_output, language_selector])
+
+        suggestions_button.click(
+            handle_suggestions_click,
+            outputs=suggestions_output
+        )
 
     return gr.mount_gradio_app(app, demo, path="/")
 
@@ -154,6 +219,8 @@ def gradio_interface(prompt, app):
 def run(app):
 
     file_path = "app/assets/Prompt.txt"
+    file_path2 = "app/assets/SuggestionsPrompt.txt"  
+
     try:
      
         with open(file_path, 'r') as file:
@@ -163,6 +230,14 @@ def run(app):
     except IOError:
         print(f"An error occurred while reading the file at {file_path}.") 
 
+    try:
+         with open(file_path2, 'r') as file:
+           suggestionsPrompt = file.read()
+    except FileNotFoundError:
+        print(f"The file at {file_path2} was not found.")
+    except IOError:
+        print(f"An error occurred while reading the file at {file_path2}.")
 
-    return gradio_interface(ourPrompt, app)
+
+    return gradio_interface(ourPrompt,suggestionsPrompt, app)
     
