@@ -28,7 +28,6 @@ provider:
   runtime: python3.10
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-west-2'}
-  memorySize: 10240
   timeout: 900
   logRetentionInDays: 1
   versionFunctions: true
@@ -36,8 +35,10 @@ provider:
   environment:
     AWS_LAMBDA: true
     ENV: ${self:provider.stage}
-    CONTENT_PATH: /tmp/content
-    XDG_CACHE_HOME: /tmp/.cache
+    CONTENT_PATH: /mnt/tmp/content
+    XDG_CACHE_HOME: /mnt/tmp/.cache
+    GRADIO_TEMP_DIR: /mnt/tmp/.cache/gradio
+    GRADIO_ALLOWED_PATHS: /mnt/tmp/
 
   ecr:
     images:
@@ -46,7 +47,8 @@ provider:
 
 functions:
   app:
-    timeout: 900
+    memorySize: 10240
+    timeout: 180
     maximumEventAge: 60
     maximumRetryAttempts: 0
     image:
@@ -62,3 +64,4 @@ functions:
           path: /{proxy+}
           method: ANY
           cors: true
+
