@@ -8,7 +8,18 @@ package:
 
 plugins:
   - serverless-offline
+  - serverless-domain-manager
 
+
+custom:
+  customDomain:
+    domainName: googeai.dev.superhifi.radio
+    stage: ""
+    basePath: ""
+    endpointType: 'regional'
+    certificateName: '*.dev.superhifi.radio'
+    createRoute53Record: true
+     
 
 provider:
   name: aws
@@ -42,6 +53,12 @@ functions:
       name: appimage
     events:
       - http:
-          public: true
+          private: false
+          path: /
+          method: GET
+          cors: true
+      - http:
+          private: false
           path: /{proxy+}
           method: ANY
+          cors: true

@@ -11,6 +11,7 @@ import nest_asyncio
 from moviepy.editor import VideoFileClip, concatenate_videoclips, AudioFileClip
 from pydub import AudioSegment
 import gradio as gr
+import uuid
 
 nest_asyncio.apply()
 
@@ -57,7 +58,7 @@ async def generate_audio(response_text, voice_name):
     await communicate.save(AUDIO_OUTPUT_FILE)
     print(f"Audio saved to {AUDIO_OUTPUT_FILE}")
 
-def create_video_with_audio_length(original_video_path, audio_path, output_video_path):
+def create_video_with_audio_length(original_video_path, audio_path, output_video_path, temp_path):
     video_clip = VideoFileClip(original_video_path)
     audio_duration = get_audio_duration(audio_path)
     video_duration = video_clip.duration
@@ -68,7 +69,9 @@ def create_video_with_audio_length(original_video_path, audio_path, output_video
         final_video_clip = final_video_clip.subclip(0, audio_duration)
     audio_clip = AudioFileClip(audio_path)
     final_video_clip = final_video_clip.set_audio(audio_clip)
-    final_video_clip.write_videofile(output_video_path, codec='libx264', audio_codec='aac', temp_audiofile=f"{CONTENT_PATH}/AnswerVideoTEMP_MPY_wvf_snd.mp4", remove_temp=True)
+
+    #final_video_clip.write_videofile(output_video_path, codec='libvpx', audio_codec='aac', remove_temp=True)
+    final_video_clip.write_videofile(output_video_path, codec='libx264', audio_codec='aac', temp_audiofile=f"{temp_path}/AnswerVideoTEMP_MPY_wvf_snd.mp4", remove_temp=True)
 
 def get_audio_duration(audio_path):
     audio = AudioSegment.from_mp3(audio_path)
@@ -76,8 +79,7 @@ def get_audio_duration(audio_path):
 
 async def handle_response(question, selected_language_code, prompt):
     print(f"Selected language code: {selected_language_code}")
-    #await initialize_voices()
-    
+
     genai.configure(api_key="AIzaSyB9In1M-PS_TxrWBtHoivcGBTVqgPWCcIg")
     
     full_voice_name = VOICE_OPTIONS.get(selected_language_code, 'en-US')  # Default to 'en-US' if not found
@@ -87,12 +89,16 @@ async def handle_response(question, selected_language_code, prompt):
     response_text = response.text
     global geminiAnswerText
     geminiAnswerText = response_text
+    temp_path = f"{CONTENT_PATH}/{uuid.uuid4()}"
     try:
         os.makedirs(os.path.dirname(AUDIO_OUTPUT_FILE), exist_ok=True)
+        os.makedirs(os.path.dirname(temp_path), exist_ok=True)
         print(f"Generating audio for response: {response_text}")
         await generate_audio(response_text, full_voice_name)
         print(f"Creating video with audio for response: {response_text}")
-        create_video_with_audio_length(VIDEO_ORIGIN_FILE, AUDIO_OUTPUT_FILE, VIDEO_OUTPUT_FILE)
+        create_video_with_audio_length(VIDEO_ORIGIN_FILE, AUDIO_OUTPUT_FILE, VIDEO_OUTPUT_FILE, temp_path)
+
+        print
         return VIDEO_OUTPUT_FILE
     except Exception as e:
         print(f"Error creating video: {e}")
@@ -102,7 +108,7 @@ def reset_ui():
     return None, "en"
 
 def gradio_interface(prompt, app):
-    with gr.Blocks(analytics_enabled=False) as demo:
+    with gr.Blocks(analytics_enabled=False,) as demo:
         gr.Markdown("# Ask Shelly")
 
         with gr.Row():
