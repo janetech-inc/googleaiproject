@@ -17,5 +17,6 @@ docker compose up --build
 ### To deploy to AWS Lambda
 
 ```
+npm install
 serverless deploy --stage dev
 ```
