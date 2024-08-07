@@ -4,7 +4,7 @@
 .header {
     display: flex; /* Use flexbox for alignment */
     align-items: center; /* Align items vertically in the center */
-    height: 100px; /* Adjust height to fit the turtle animation */
+    height: 30px; /* Adjust height to fit the turtle animation */
 }
 
 .title {
@@ -44,3 +44,18 @@
 .gradio-button:hover {
     background: linear-gradient(135deg, #66bb6a, #388e3c); /* Darker gradient on hover */
 }
+
+.fixed-size-video {
+    width: 100%;
+    height: auto; 
+    max-width: 320px; 
+    aspect-ratio: 1 / 1;
+    margin: auto; 
+}
+
+.video-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Django's command-line utility for administrative tasks."""
 import os
 
@@ -20,9 +19,11 @@ nest_asyncio.apply()
 CONTENT_PATH = os.environ.get("CONTENT_PATH", "./tmp/output")
 
 # Constants
-AUDIO_OUTPUT_FILE = "AnswerAudioTest.mp3"
-VIDEO_OUTPUT_FILE = "AnswerVideo.mp4"
+AUDIO_OUTPUT_FILE = f"{CONTENT_PATH}/AnswerAudioTest.mp3"
+VIDEO_OUTPUT_FILE = f"{CONTENT_PATH}/AnswerVideo.mp4"
 VIDEO_ORIGIN_FILE = "app/assets/Shelly.mp4"
+VIDEO_DEFAULT = "app/assets/WelcomeVideo.mp4"
+
 
 video_ready = False
 language_codeG = "en"
@@ -75,7 +76,6 @@ def create_video_with_audio_length(original_video_path, audio_path, output_video
         final_video_clip = final_video_clip.subclip(0, audio_duration)
     audio_clip = AudioFileClip(audio_path)
     final_video_clip = final_video_clip.set_audio(audio_clip)
-
     final_video_clip.write_videofile(output_video_path, 
                                      codec='libx264', 
                                      audio_codec='aac', 
@@ -163,7 +163,7 @@ def read_css_file(filename):
 
 def gradio_interface(prompt,suggestionsPrompt,app):
     css = read_css_file('app/assets/styles.css')
-    with gr.Blocks(analytics_enabled=False,css=css,theme=theme , title="Shelly Bot") as demo:
+    with gr.Blocks(analytics_enabled=False,css=css,theme=theme , title="Shelly Bot" ) as demo:
         gr.HTML("""
             <div class="header">
                 <div class="title">
@@ -174,7 +174,9 @@ def gradio_interface(prompt,suggestionsPrompt,app):
         """)
         with gr.Row():
             with gr.Column(scale=2, min_width=200):
-                video_output = gr.Video(label="Your Answer Video", scale=0.8)
+                with gr.Row():
+                    with gr.Column():
+                        video_output = gr.Video(label="Your Answer Video", scale=1.0, elem_classes="fixed-size-video",value=VIDEO_DEFAULT)  # Apply custom CSS class
                 qusetion_input = gr.Textbox(label="Question", placeholder="Write Your question here, or Record it", lines=1, max_lines=3, scale=0.5)
                 language_codes = asyncio.run(list_language_codes())  # Fetch language codes asynchronously
                 language_selector = gr.Dropdown(
