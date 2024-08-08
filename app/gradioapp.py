@@ -13,6 +13,8 @@ import gradio as gr
 import uuid
 import json
 import re
+from google.cloud import datastore
+
 
 nest_asyncio.apply()
 
@@ -22,7 +24,9 @@ CONTENT_PATH = os.environ.get("CONTENT_PATH", "./tmp/output")
 AUDIO_OUTPUT_FILE = f"{CONTENT_PATH}/AnswerAudioTest.mp3"
 VIDEO_OUTPUT_FILE = f"{CONTENT_PATH}/AnswerVideo.mp4"
 VIDEO_ORIGIN_FILE = "app/assets/Shelly.mp4"
-VIDEO_DEFAULT = "app/assets/WelcomeVideo.mp4"
+VIDEO_DEFAULT = "app/assets/Ww.mp4"
+FIRESORE_JSON_PATH = "app/assets/datastoreKey.json"
+
 
 
 video_ready = False
@@ -125,10 +129,7 @@ async def handle_response(question, selected_language_code, prompt):
     except Exception as e:
         print(f"Error creating video: {e}")
         return None
-
-def reset_ui():
-    return None, "en"
-
+ 
 def handle_suggestions(suggestionsPrompt):
     if not video_ready:
         return "You can get suggestions when the video becomes ready."
@@ -137,7 +138,31 @@ def handle_suggestions(suggestionsPrompt):
         print(response_suggestions.text)
         suggestions = extract_suggestions(response_suggestions.text)
         return format_suggestions_as_html(suggestions)
+client = datastore.Client.from_service_account_json(FIRESORE_JSON_PATH)
 
+def is_valid_email(email):
+    return re.match(r"[^@]+@[^@]+\.[^@]+", email) is not None
+
+def subscribe_save_user_data(name, email):
+    client = datastore.Client.from_service_account_json(FIRESORE_JSON_PATH)
+    if not name or not email:
+        return "Name and email are required."
+    if not is_valid_email(email):
+        return "Invalid email format."
+    
+    # Check if the email already exists
+    query = client.query(kind='User')
+    query.add_filter('email', '=', email)
+    existing_user = list(query.fetch())
+    
+    if existing_user:
+        return "Email is already subscribed."
+
+    entity = datastore.Entity(key=client.key('User'))
+    entity.update({'username': name, 'email': email})
+    client.put(entity)
+    
+    return "You Subscribed Successfully!🎉"
 
 def extract_suggestions(text):
     pattern = re.compile(r'([^\[]+?)(?:\[(?:[^\]]+?)\])?\((https?://[^\)]+)\)')
@@ -176,8 +201,13 @@ def gradio_interface(prompt,suggestionsPrompt,app):
             with gr.Column(scale=2, min_width=200):
                 with gr.Row():
                     with gr.Column():
-                        video_output = gr.Video(label="Your Answer Video", scale=1.0, elem_classes="fixed-size-video",value=VIDEO_DEFAULT)  # Apply custom CSS class
-                qusetion_input = gr.Textbox(label="Question", placeholder="Write Your question here, or Record it", lines=2, max_lines=3, scale=0.5)
+                        video_output = gr.Video(
+                            label="Your Answer Video",
+                            scale=1.0, elem_classes="fixed-size-video",
+                            value=VIDEO_DEFAULT,
+                            autoplay=True     
+                            )  
+                question_input = gr.Textbox(label="Question", placeholder="Write Your question here, or Record it", lines=2, max_lines=3, scale=0.5)
                 language_codes = asyncio.run(list_language_codes())  # Fetch language codes asynchronously
                 language_selector = gr.Dropdown(
                     label="Select Voice Locale",
@@ -188,15 +218,33 @@ def gradio_interface(prompt,suggestionsPrompt,app):
                 suggestions_output = gr.HTML(label="Shelly Suggestions")  # Changed to gr.HTML
 
                 with gr.Row():
-                    send_button = gr.Button("Send", scale=0.7, elem_classes="gradio-button")
-                    suggestions_button = gr.Button("Shelly Suggestions", scale=0.7, elem_classes="gradio-button")  
-                    new_question_button = gr.Button("New Question", scale=0.7, elem_classes="gradio-button")
+                     send_button = gr.Button("Send", scale=0.7, elem_classes="gradio-button")
+                     suggestions_button = gr.Button("Shelly Suggestions", scale=0.7, elem_classes="gradio-button")  
+                gr.HTML("""
+                    <div style="text-align: center; margin-top: 10px;">
+                        <span style="font-weight: bold; color: #4caf50; cursor: pointer; text-decoration: underline;font-size: 16px;" onclick="window.location.reload();">
+                            New Question
+                        </span>
+                    </div>
+                """)
+                    #new_question_button = gr.Button("New Question", scale=0.7, elem_classes="gradio-button")
 
             with gr.Column(scale=1, min_width=200):
                 audio_input = gr.Audio(type="filepath", label="Record your question", scale=0.7)
                 transcribe_button = gr.Button("Audio to Text", scale=0.7)
+                gr.HTML("""
+                    <p style="text-align: center; font-size: 14 px; font-weight: bold; color: #333;">
+                        You can SUBSCRIBE to receive the latest educational news
+                    </p>
+                """)
+                name_input = gr.Textbox(label="Name", placeholder="Enter your name", lines=1, scale=0.7)
+                email_input = gr.Textbox(label="Email", placeholder="Enter your email", lines=1, scale=0.7)
+                subscribe_button = gr.Button("Subscribe", scale=0.7)
+                result_output = gr.HTML(elem_id="result-output")
 
-        transcribe_button.click(handle_audio_upload, inputs=audio_input, outputs=qusetion_input)
+               
+
+        transcribe_button.click(handle_audio_upload, inputs=audio_input, outputs=question_input)
 
         # Asynchronous function wrapper for Gradio
         async def async_handle_send(question, language_code):
@@ -209,20 +257,27 @@ def gradio_interface(prompt,suggestionsPrompt,app):
         def handle_suggestions_click():
             return handle_suggestions(suggestionsPrompt)
 
+        def handle_subscription(name, email):
+            result_message = subscribe_save_user_data(name, email)
+            return f"<div style='text-align: center; font-size: 14px; color: gray ;'>{result_message}</div>"
+
+
         send_button.click(
             handle_send,
-            inputs=[qusetion_input, language_selector],
+            inputs=[question_input, language_selector],
             outputs=video_output
         )
-        new_question_button.click(
-            reset_ui, 
-            outputs=[audio_input, qusetion_input, video_output, language_selector])
-
+      
         suggestions_button.click(
             handle_suggestions_click,
             outputs=suggestions_output
         )
 
+        subscribe_button.click(
+            handle_subscription,
+            inputs=[name_input, email_input],
+            outputs=result_output
+        )
     return gr.mount_gradio_app(app, demo, path="/")
 
 
