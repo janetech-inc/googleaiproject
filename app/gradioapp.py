@@ -80,7 +80,7 @@ def create_video_with_audio_length(original_video_path, audio_path, output_video
                                      codec='libx264', 
                                      audio_codec='aac', 
                                      temp_audiofile=temp_path, 
-                                     threads=20, 
+                                #     threads=3, 
                                      remove_temp=True,
                                      verbose=False, 
                                      preset='ultrafast', 
@@ -177,7 +177,7 @@ def gradio_interface(prompt,suggestionsPrompt,app):
                 with gr.Row():
                     with gr.Column():
                         video_output = gr.Video(label="Your Answer Video", scale=1.0, elem_classes="fixed-size-video",value=VIDEO_DEFAULT)  # Apply custom CSS class
-                qusetion_input = gr.Textbox(label="Question", placeholder="Write Your question here, or Record it", lines=1, max_lines=3, scale=0.5)
+                qusetion_input = gr.Textbox(label="Question", placeholder="Write Your question here, or Record it", lines=2, max_lines=3, scale=0.5)
                 language_codes = asyncio.run(list_language_codes())  # Fetch language codes asynchronously
                 language_selector = gr.Dropdown(
                     label="Select Voice Locale",
