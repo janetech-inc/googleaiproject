@@ -24,7 +24,7 @@ CONTENT_PATH = os.environ.get("CONTENT_PATH", "./tmp/output")
 AUDIO_OUTPUT_FILE = f"{CONTENT_PATH}/AnswerAudioTest.mp3"
 VIDEO_OUTPUT_FILE = f"{CONTENT_PATH}/AnswerVideo.mp4"
 VIDEO_ORIGIN_FILE = "app/assets/Shelly.mp4"
-VIDEO_DEFAULT = "app/assets/Ww.mp4"
+VIDEO_DEFAULT = "app/assets/WelcomeVideo.mp4"
 FIRESORE_JSON_PATH = "app/assets/datastoreKey.json"
 
 
@@ -202,7 +202,7 @@ def gradio_interface(prompt,suggestionsPrompt,app):
                 with gr.Row():
                     with gr.Column():
                         video_output = gr.Video(
-                            label="Your Answer Video",
+                            label="Shelly's Answer",
                             scale=1.0, elem_classes="fixed-size-video",
                             value=VIDEO_DEFAULT,
                             autoplay=True     
@@ -210,7 +210,7 @@ def gradio_interface(prompt,suggestionsPrompt,app):
                 question_input = gr.Textbox(label="Question", placeholder="Write Your question here, or Record it", lines=2, max_lines=3, scale=0.5)
                 language_codes = asyncio.run(list_language_codes())  # Fetch language codes asynchronously
                 language_selector = gr.Dropdown(
-                    label="Select Voice Locale",
+                    label="Answer Language",
                     choices=language_codes,  # Populate dropdown with language codes
                     value="en",  # Default choice
                     scale=0.7
@@ -218,11 +218,11 @@ def gradio_interface(prompt,suggestionsPrompt,app):
                 suggestions_output = gr.HTML(label="Shelly Suggestions")  # Changed to gr.HTML
 
                 with gr.Row():
-                     send_button = gr.Button("Send", scale=0.7, elem_classes="gradio-button")
-                     suggestions_button = gr.Button("Shelly Suggestions", scale=0.7, elem_classes="gradio-button")  
+                     send_button = gr.Button("Send", scale=1, elem_classes="gradio-button")
+                     suggestions_button = gr.Button("Shelly Suggestions", scale=1, elem_classes="gradio-button")  
                 gr.HTML("""
                     <div style="text-align: center; margin-top: 10px;">
-                        <span style="font-weight: bold; color: #4caf50; cursor: pointer; text-decoration: underline;font-size: 16px;" onclick="window.location.reload();">
+                        <span style="font-weight: bold; color: #4caf50; cursor: pointer;font-size: 16px;" onclick="window.location.reload();">
                             New Question
                         </span>
                     </div>
