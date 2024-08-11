@@ -23,7 +23,7 @@ CONTENT_PATH = os.environ.get("CONTENT_PATH", "./tmp/output")
 # Constants
 AUDIO_OUTPUT_FILE = f"{CONTENT_PATH}/AnswerAudioTest.mp3"
 VIDEO_OUTPUT_FILE = f"{CONTENT_PATH}/AnswerVideo.mp4"
-VIDEO_ORIGIN_FILE = "app/assets/Shelly.mp4"
+VIDEO_ORIGIN_FILE = "app/assets/ShellySpeak.mp4"
 VIDEO_DEFAULT = "app/assets/WelcomeVideo.mp4"
 FIRESORE_JSON_PATH = "app/assets/datastoreKey.json"
 
