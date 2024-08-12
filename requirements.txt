@@ -14,4 +14,4 @@ moviepy
 faster-whisper
 nest_asyncio
 edge_tts
-google-cloud
+google-cloud-datastore
