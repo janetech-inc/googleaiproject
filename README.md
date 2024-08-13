@@ -11,7 +11,6 @@
 ### Environment
 - ```GEMINI_API_KEY```: The API key for Google Gemeni. Defaults to "".
 - ```CONTENT_PATH```: The content directory key for storing output. Defaults to `.\tmp\output`
-- 
 
 ### To run locally
 
