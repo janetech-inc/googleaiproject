@@ -101,7 +101,7 @@ async def handle_response(question, selected_language_code, prompt):
     global geminiAnswerText
     global questionG
 
-    genai.configure(api_key="AIzaSyB9In1M-PS_TxrWBtHoivcGBTVqgPWCcIg")
+    genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))
     
     full_voice_name = VOICE_OPTIONS.get(selected_language_code, 'en-US')  # Default to 'en-US' if not found
     locale_part = full_voice_name.split('(')[1].split(',')[0].strip()  # "en-US"
